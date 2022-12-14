@@ -29,14 +29,14 @@ class GPDMLE:
         xi, sigma = theta
         return -1.0 * np.sum(gdp_logp(self.x_exceed, xi, sigma))
 
-    def fit(self, x_data):
+    def fit(self, x_data, disp=False):
 
         self.x_exceed = x_data[np.where(x_data > self.u)] - self.u
 
         self.n_sample = len(x_data)
         self.n_exceed = len(self.x_exceed)
 
-        self.xi, self.sigma = sp.optimize.fmin(self.neg_ll, (0.001, 1.0))
+        self.xi, self.sigma = sp.optimize.fmin(self.neg_ll, (0.001, 1.0), disp=disp)
 
     def p_u(self) -> float:
         return self.n_exceed / self.n_sample
