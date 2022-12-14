@@ -4,12 +4,16 @@ import matplotlib.pyplot as plt
 from autograd import hessian, grad
 
 
-def gdp_logp(x, xi, sigma, mu=0.0):
+def gpd_logp(x, xi, sigma, mu=0.0):
     z = (x - mu) / sigma
     return -np.log(sigma) - (1.0 + 1.0 / xi) * np.log(1.0 + xi * z)
 
 
-def gdp_returnlevel(returnperiod, mu, xi, sigma, p_mu, period=1.0):
+def gpd_pdf(x, xi, sigma, mu=0.0):
+    return np.exp(gpd_logp(x, xi, sigma, mu=mu))
+
+
+def gpd_returnlevel(returnperiod, mu, xi, sigma, p_mu, period=1.0):
     m = returnperiod * period
     return mu + (sigma / xi) * (np.power(m * p_mu, xi) - 1.0)
 
@@ -27,7 +31,7 @@ class GPDMLE:
 
     def neg_ll(self, theta) -> float:
         xi, sigma = theta
-        return -1.0 * np.sum(gdp_logp(self.x_exceed, xi, sigma))
+        return -1.0 * np.sum(gpd_logp(self.x_exceed, xi, sigma))
 
     def fit(self, x_data, disp=False):
 
@@ -68,14 +72,14 @@ class GPDMLE:
 
     def return_level(self, return_period, period=1.0):
 
-        return gdp_returnlevel(
+        return gpd_returnlevel(
             return_period, self.u, self.xi, self.sigma, self.p_u(), period=period
         )
 
     def _return_level_se(self, return_period, period=1.0):
         def rl(theta):
             xi, sigma, p_u = theta
-            return gdp_returnlevel(return_period, self.u, xi, sigma, p_u, period=period)
+            return gpd_returnlevel(return_period, self.u, xi, sigma, p_u, period=period)
 
         delta = grad(rl)(np.array([self.xi, self.sigma, self.p_u()]))
 
@@ -119,3 +123,14 @@ class GPDMLE:
         if log_scale:
             plt.xscale("log")
         plt.show()
+
+    def dist_plot(self, n=20):
+
+        x0 = 0.0
+        x1 = np.quantile(self.x_exceed, 0.999)
+        x_vals = np.linspace(x0, x1, 20)
+
+        pdf = gpd_pdf(x_vals, self.xi, self.sigma, mu=0.0)
+
+        plt.hist(self.x_exceed, bins=n, range=(x0, x1), density=True)
+        plt.plot(x_vals, pdf)
