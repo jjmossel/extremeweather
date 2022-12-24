@@ -1,4 +1,5 @@
-import pandas as pd
+# import pandas as pd
+import pandas_gbq as pbq
 from functools import lru_cache
 from google.cloud import bigquery
 
@@ -45,11 +46,11 @@ def stations_info():
             ORDER BY date_counts.date_count DESC
     '''
 
-    df = bigquery2df(query_str)
+    df = pbq.read_gbq(query_str)
     df = df.set_index('id')
 
     date_cols = ['date_min', 'date_max']
-    df[date_cols] = df[date_cols].apply(pd.to_datetime)
+    df[date_cols] = df[date_cols].astype("datetime64[ns]")
     return df
 
 
@@ -73,8 +74,7 @@ def hist_daily(ids: tuple, field: str, date_start=None, date_end=None):
         ORDER BY date
     '''
 
-    df = bigquery2df(daily_qry).copy()
+    df = pbq.read_gbq(daily_qry)
     df['value'] /= fields_daily['PRCP']
-    df['date'] = df['date'].apply(pd.to_datetime)
-
+    df['date'] = df['date'].astype("datetime64[ns]")
     return df.set_index(['date', 'id'])['value'].unstack('id')
