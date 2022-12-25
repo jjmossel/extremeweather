@@ -106,10 +106,12 @@ class NOAAStore:
 
         assert element in fields_daily.keys()
 
-        if (element in self.hdf) & (not overwrite):
-            df = self.hdf.get(element)
+        key = element + "_US"
+
+        if (key in self.hdf) & (not overwrite):
+            df = self.hdf.get(key)
         else:
             df = self._timeseries_universe_get(element)
-            self.hdf.put(element, df, format="table", data_columns=True)
+            self.hdf.put(key, df, format="table", data_columns=True)
 
         return df
