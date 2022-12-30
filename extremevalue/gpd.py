@@ -29,7 +29,7 @@ class GPDMLE:
         self.n_sample = None
         self.n_exceed = None
 
-    def neg_ll(self, theta) -> float:
+    def _neg_ll(self, theta) -> float:
         xi, sigma = theta
         return -1.0 * np.sum(gpd_logp(self.x_exceed, xi, sigma))
 
@@ -40,7 +40,7 @@ class GPDMLE:
         self.n_sample = len(x_data)
         self.n_exceed = len(self.x_exceed)
 
-        self.xi, self.sigma = sp.optimize.fmin(self.neg_ll, (0.001, 1.0), disp=disp)
+        self.xi, self.sigma = sp.optimize.fmin(self._neg_ll, (0.001, 1.0), disp=disp)
 
     def p_u(self) -> float:
         return self.n_exceed / self.n_sample
@@ -124,13 +124,16 @@ class GPDMLE:
             plt.xscale("log")
         plt.show()
 
+    def pdf(self, x):
+        return gpd_pdf(x, self.xi, self.sigma, mu=0.0)
+
     def dist_plot(self, n=20):
 
         x0 = 0.0
         x1 = np.quantile(self.x_exceed, 0.999)
-        x_vals = np.linspace(x0, x1, 20)
+        x_vals = np.linspace(x0, x1, n)
 
-        pdf = gpd_pdf(x_vals, self.xi, self.sigma, mu=0.0)
+        pdf = self.pdf(x_vals)
 
         plt.hist(self.x_exceed, bins=n, range=(x0, x1), density=True)
         plt.plot(x_vals, pdf)
