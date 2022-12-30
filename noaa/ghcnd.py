@@ -112,6 +112,6 @@ class NOAAStore:
             df = self.hdf.get(key)
         else:
             df = self._timeseries_universe_get(element)
-            self.hdf.put(key, df, format="table", data_columns=True)
+            self.hdf.put(key, df, format="fixed")
 
         return df
