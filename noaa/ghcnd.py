@@ -4,7 +4,8 @@ from google.cloud import bigquery
 
 client = bigquery.Client()
 
-cache_path = "/Users/mosselveen/dev/extremeweather/.cache/"
+# cache_path = "/Users/mosselveen/dev/extremeweather/.cache/"
+cache_path = "~/dev/extremeweather/.cache/"
 
 
 fields_daily = {
@@ -37,16 +38,6 @@ class NOAAStore:
         df = df.set_index("id")
         return df
 
-    def stations(self, overwrite=False):
-        key = "stations"
-
-        if (key in self.hdf) & (not overwrite):
-            return self.hdf.get(key)
-        else:
-            df = self._stations_get()
-            self.hdf.put(key, df, format="table", data_columns=True)
-            return df
-
     def _stations_inventory_get(self):
 
         qry = """
@@ -64,14 +55,21 @@ class NOAAStore:
         df = df[["firstyear", "lastyear"]].astype("int64")
         return df
 
-    def stations_inventory(self, element=None, include_info=False, overwrite=False):
-        key = "inventory"
-
+    def _get_table(self, key, data_getter, overwrite=False):
         if (key in self.hdf) & (not overwrite):
-            df = self.hdf.get(key)
+            return self.hdf.get(key)
         else:
-            df = self._stations_inventory_get()
+            df = data_getter()
             self.hdf.put(key, df, format="table", data_columns=True)
+            return df
+
+    def stations(self, overwrite=False):
+        return self._get_table("stations", self._stations_get, overwrite=overwrite)
+
+    def stations_inventory(self, element=None, include_info=False, overwrite=False):
+        df = self._get_table(
+            "inventory", self._stations_inventory_get, overwrite=overwrite
+        )
 
         if element is not None:
             df = df.xs(element, axis="index", level="element")
