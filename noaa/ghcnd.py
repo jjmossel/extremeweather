@@ -4,7 +4,6 @@ from google.cloud import bigquery
 
 client = bigquery.Client()
 
-# cache_path = "/Users/mosselveen/dev/extremeweather/.cache/"
 cache_path = "~/dev/extremeweather/.cache/"
 
 
@@ -17,7 +16,12 @@ fields_daily = {
 
 class NOAAStore:
     def __init__(self):
-        self.hdf = pd.HDFStore(cache_path + ".noaa_store.h5")
+        self.hdf_path = cache_path + ".noaa_store.h5"
+
+    def _keys(self):
+        with pd.HDFStore(self.hdf_path) as store:
+            keys = store.keys()
+        return keys
 
     def _stations_get(self):
 
@@ -56,12 +60,14 @@ class NOAAStore:
         return df
 
     def _get_table(self, key, data_getter, overwrite=False):
-        if (key in self.hdf) & (not overwrite):
-            return self.hdf.get(key)
-        else:
-            df = data_getter()
-            self.hdf.put(key, df, format="table", data_columns=True)
-            return df
+
+        with pd.HDFStore(self.hdf_path) as store:
+            if (key in store) & (not overwrite):
+                df = store.get(key)
+            else:
+                df = data_getter()
+                store.put(key, df, format="table", data_columns=True)
+        return df
 
     def stations(self, overwrite=False):
         return self._get_table("stations", self._stations_get, overwrite=overwrite)
@@ -106,10 +112,11 @@ class NOAAStore:
 
         key = element + "_US"
 
-        if (key in self.hdf) & (not overwrite):
-            df = self.hdf.get(key)
-        else:
-            df = self._timeseries_universe_get(element)
-            self.hdf.put(key, df, format="fixed")
+        with pd.HDFStore(self.hdf_path) as store:
+            if (key in store) & (not overwrite):
+                df = store.get(key)
+            else:
+                df = self._timeseries_universe_get(element)
+                store.put(key, df, format="fixed")
 
         return df
