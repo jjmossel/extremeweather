@@ -156,6 +156,17 @@ def gev_returnlevel(rl, mu, sigma, xi):
     return mu - (sigma / xi) * (1 - np.power(-np.log(1.0 - p), -xi))
 
 
+def gev_returnlevel_grad(rl, _mu, sigma, xi):
+    y = -np.log(1 - 1.0 / rl)
+    y_xi = np.power(y, -xi)
+
+    d_mu = 1.0
+    d_sigma = -1.0 / xi * (1.0 - y_xi)
+    d_xi = sigma / np.power(xi, 2.0) * (1.0 - y_xi) - sigma / xi * y_xi * np.log(y)
+
+    return np.array([d_mu, d_sigma, d_xi])
+
+
 def gev_sf(x, mu, sigma, xi):
     z = (x - mu) / sigma
     return 1.0 - np.exp(-np.power(1 + xi * z, -1.0 / xi))
@@ -170,6 +181,8 @@ class GEVMLE:
         self.mu = None
         self.sigma = None
         self.xi = None
+
+        self._cov = None
 
     def _fit_x_max(self, x):
         n_blocks = len(x) // self.period
@@ -188,11 +201,17 @@ class GEVMLE:
         self.mu = mu
         self.sigma = sigma
         self.xi = -neg_xi
+        self._cov = None
 
     def cov(self) -> np.ndarray:
-        fisher_info = hessian(self._neg_ll)(np.array([self.mu, self.sigma, self.xi]))
-        cov = np.linalg.inv(fisher_info)
-        return cov
+        if self._cov is None:
+            fisher_info = hessian(self._neg_ll)(
+                np.array([self.mu, self.sigma, self.xi])
+            )
+            cov = np.linalg.inv(fisher_info)
+            self._cov = cov
+
+        return self._cov
 
     def get_params(self, include_ci=False) -> dict:
 
