@@ -18,6 +18,11 @@ def gpd_returnlevel(returnperiod, mu, xi, sigma, p_mu, period=1.0):
     return mu + (sigma / xi) * (np.power(m * p_mu, xi) - 1.0)
 
 
+def gpd_returnperiod(x_m, mu, xi, sigma, p_mu, period=1.0):
+    m = np.power((x_m - mu) * (xi / sigma) + 1.0, 1.0 / xi) / p_mu
+    return m / period
+
+
 class GPDMLE:
     def __init__(self, u):
         self.u = u
@@ -34,7 +39,6 @@ class GPDMLE:
         return -1.0 * np.sum(gpd_logp(self.x_exceed, xi, sigma))
 
     def fit(self, x_data, disp=False):
-
         self.x_exceed = x_data[np.where(x_data > self.u)] - self.u
 
         self.n_sample = len(x_data)
@@ -55,7 +59,6 @@ class GPDMLE:
         return cov
 
     def get_params(self, include_ci=False) -> dict:
-
         params = {"xi": self.xi, "sigma": self.sigma}
 
         if include_ci:
@@ -71,7 +74,6 @@ class GPDMLE:
             return params
 
     def return_level(self, return_period, period=1.0):
-
         return gpd_returnlevel(
             return_period, self.u, self.xi, self.sigma, self.p_u(), period=period
         )
@@ -90,11 +92,9 @@ class GPDMLE:
         return np.sqrt((delta.dot(cov)).dot(delta))
 
     def return_level_se(self, return_period, period=1.0):
-
         return np.vectorize(self._return_level_se)(return_period, period=period)
 
     def _return_periods(self, n=20, log_scale=True):
-
         n_start = self.n_sample / self.n_exceed
         n_end = self.n_sample
 
@@ -105,7 +105,6 @@ class GPDMLE:
         return rl
 
     def return_level_plot(self, include_ci=False, log_scale=True, period=1.0):
-
         rp = self._return_periods(n=50, log_scale=log_scale)
         rl = self.return_level(rp)
 
@@ -124,11 +123,15 @@ class GPDMLE:
             plt.xscale("log")
         plt.show()
 
+    def return_period(self, return_level, period=1.0):
+        return gpd_returnperiod(
+            return_level, self.u, self.xi, self.sigma, self.p_u(), period=period
+        )
+
     def pdf(self, x):
         return gpd_pdf(x, self.xi, self.sigma, mu=0.0)
 
     def dist_plot(self, n=20):
-
         x0 = 0.0
         x1 = np.quantile(self.x_exceed, 0.999)
         x_vals = np.linspace(x0, x1, n)
@@ -138,9 +141,11 @@ class GPDMLE:
         plt.hist(self.x_exceed, bins=n, range=(x0, x1), density=True)
         plt.plot(x_vals, pdf)
 
+    def excess_mean(self):
+        return self.sigma / (1.0 - self.xi)
+
 
 def gev_logp(x, mu, sigma, xi):
-
     z = (x - mu) / sigma
     t = 1.0 + xi * z
 
@@ -174,7 +179,6 @@ def gev_sf(x, mu, sigma, xi):
 
 class GEVMLE:
     def __init__(self, period=100):
-
         self.period = period
         self.x_max = None
 
@@ -193,7 +197,6 @@ class GEVMLE:
         return -1.0 * np.sum(gev_logp(self.x_max, mu, sigma, xi))
 
     def fit(self, x_data, disp=False):
-
         self._fit_x_max(x_data)
 
         neg_xi, mu, sigma = sp.stats.genextreme.fit(self.x_max)
@@ -214,7 +217,6 @@ class GEVMLE:
         return self._cov
 
     def get_params(self, include_ci=False) -> dict:
-
         params = {"mu": self.mu, "sigma": self.sigma, "xi": self.xi}
 
         if include_ci:
@@ -231,7 +233,6 @@ class GEVMLE:
             return params
 
     def return_level(self, return_period):
-
         return gev_returnlevel(
             return_period,
             self.mu,
@@ -251,11 +252,9 @@ class GEVMLE:
         return np.sqrt((delta.dot(cov)).dot(delta))
 
     def return_level_se(self, return_period):
-
         return np.vectorize(self._return_level_se)(return_period)
 
     def _return_periods(self, n=20, log_scale=True):
-
         n_start = 2
         n_end = len(self.x_max)
 
@@ -266,7 +265,6 @@ class GEVMLE:
         return rl
 
     def return_level_plot(self, include_ci=False, log_scale=True, period=1.0):
-
         rp = self._return_periods(n=50, log_scale=log_scale)
         rl = self.return_level(rp)
 
@@ -289,7 +287,6 @@ class GEVMLE:
         return gev_pdf(x, self.mu, self.sigma, self.xi)
 
     def dist_plot(self, n=20):
-
         x0 = np.min(self.x_max)
         x1 = np.quantile(self.x_max, 0.999)
         x_vals = np.linspace(x0, x1, n)
@@ -317,7 +314,6 @@ class GEVMLE:
         return np.sqrt((delta.dot(cov)).dot(delta))
 
     def return_period_se(self, return_level):
-
         return np.vectorize(self._return_period_se)(return_level)
 
 
@@ -328,7 +324,6 @@ class GEVMLE_ts(GEVMLE):
         super().__init__(365.25)
 
     def _fit_x_max(self, ts):
-
         ts = ts.copy()
         ts = ts.to_frame("value")
         ts["year"] = ts.index.year
