@@ -1,7 +1,9 @@
 import autograd.numpy as np
 import scipy as sp
+import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from autograd import hessian, grad
+from statsmodels.distributions.empirical_distribution import ECDF
 
 
 def gpd_logp(x, xi, sigma, mu=0.0):
@@ -104,23 +106,37 @@ class GPDMLE:
             rl = np.linspace(n_start, n_end, n)
         return rl
 
-    def return_level_plot(self, include_ci=False, log_scale=True, period=1.0):
+    def return_level_plot(
+        self, include_ci=False, log_scale=True, period=1.0, include_data=False
+    ):
         rp = self._return_periods(n=50, log_scale=log_scale)
         rl = self.return_level(rp)
 
         rp_scaled = rp / period
 
-        plt.plot(rp_scaled, rl)
+        plt.plot(rp_scaled, rl, label="gpd")
 
         if include_ci:
             rl_se = self.return_level_se(rp)
-            plt.fill_between(rp_scaled, rl - 2.0 * rl_se, rl + 2.0 * rl_se, alpha=0.25)
+            plt.fill_between(
+                rp_scaled, rl - 2.0 * rl_se, rl + 2.0 * rl_se, alpha=0.25, label="ci"
+            )
 
         plt.xlabel("return period")
         plt.ylabel("return level")
 
+        if include_data:
+            ecdf = ECDF(self.x_exceed, side="left")
+            eprob = (1.0 - ecdf(self.x_exceed)) * self.p_u()
+            erl = (1.0 / eprob) / period
+
+            plt.scatter(erl, self.x_exceed + self.u, label="data")
+
         if log_scale:
             plt.xscale("log")
+
+        plt.legend()
+
         plt.show()
 
     def return_period(self, return_level, period=1.0):
@@ -143,6 +159,15 @@ class GPDMLE:
 
     def excess_mean(self):
         return self.sigma / (1.0 - self.xi)
+
+    def qq_plot(self):
+        sm.ProbPlot(
+            self.x_exceed,
+            dist=sp.stats.genpareto,
+            scale=self.sigma,
+            loc=0.0,
+            distargs=(self.xi,),
+        ).qqplot(line="45")
 
 
 def gev_logp(x, mu, sigma, xi):
@@ -255,7 +280,7 @@ class GEVMLE:
         return np.vectorize(self._return_level_se)(return_period)
 
     def _return_periods(self, n=20, log_scale=True):
-        n_start = 2
+        n_start = 1.01
         n_end = len(self.x_max)
 
         if log_scale:
@@ -264,7 +289,9 @@ class GEVMLE:
             rl = np.linspace(n_start, n_end, n)
         return rl
 
-    def return_level_plot(self, include_ci=False, log_scale=True, period=1.0):
+    def return_level_plot(
+        self, include_ci=False, log_scale=True, period=1.0, include_data=False
+    ):
         rp = self._return_periods(n=50, log_scale=log_scale)
         rl = self.return_level(rp)
 
@@ -279,8 +306,16 @@ class GEVMLE:
         plt.xlabel("return period")
         plt.ylabel("return level")
 
+        if include_data:
+            ecdf = ECDF(self.x_max, side="left")
+            eprob = 1.0 - ecdf(self.x_max)
+            erl = (1.0 / eprob) / period
+
+            plt.scatter(erl, self.x_max, label="data")
+
         if log_scale:
             plt.xscale("log")
+
         plt.show()
 
     def pdf(self, x):
@@ -315,6 +350,15 @@ class GEVMLE:
 
     def return_period_se(self, return_level):
         return np.vectorize(self._return_period_se)(return_level)
+
+    def qq_plot(self):
+        sm.ProbPlot(
+            self.x_max,
+            dist=sp.stats.genextreme,
+            scale=self.sigma,
+            loc=self.mu,
+            distargs=(-self.xi,),
+        ).qqplot(line="45")
 
 
 class GEVMLE_ts(GEVMLE):
