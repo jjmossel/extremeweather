@@ -181,9 +181,14 @@ def gev_pdf(x, mu, sigma, xi):
     return np.exp(gev_logp(x, mu, sigma, xi))
 
 
-def gev_returnlevel(rl, mu, sigma, xi):
-    p = 1.0 / rl
+def gev_returnlevel(rp, mu, sigma, xi):
+    p = 1.0 / rp
     return mu - (sigma / xi) * (1 - np.power(-np.log(1.0 - p), -xi))
+
+
+def gev_returnperiod(x, mu, sigma, xi):
+    p = 1.0 - np.exp(-np.power((x - mu) * (xi / sigma) + 1.0, -1.0 / xi))
+    return 1.0 / p
 
 
 def gev_returnlevel_grad(rl, _mu, sigma, xi):
