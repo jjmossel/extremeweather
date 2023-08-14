@@ -373,16 +373,6 @@ class GEVMLE_ts(GEVMLE):
         super().__init__(365.25)
 
     def _fit_x_max(self, ts):
-        ts = ts.copy()
-        ts = ts.to_frame("value")
-        ts["year"] = ts.index.year
-
-        def period_max(ts):
-            if ts.count() >= 330:
-                return ts.max()
-            else:
-                return np.nan
-
-        ts_max = ts.groupby("year")["value"].apply(period_max)
-
+        # add data checks
+        ts_max = ts.groupby(lambda x: x.year).max()
         self.x_max = ts_max.dropna().values
