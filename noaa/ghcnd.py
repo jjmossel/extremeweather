@@ -24,7 +24,6 @@ class NOAAStore:
         return keys
 
     def _stations_get(self):
-
         qry = """
         SELECT
             stations.id,
@@ -43,7 +42,6 @@ class NOAAStore:
         return df
 
     def _stations_inventory_get(self):
-
         qry = """
         SELECT
             inventory.id,
@@ -60,7 +58,6 @@ class NOAAStore:
         return df
 
     def _get_table(self, key, data_getter, overwrite=False):
-
         with pd.HDFStore(self.hdf_path) as store:
             if (key in store) & (not overwrite):
                 df = store.get(key)
@@ -85,7 +82,6 @@ class NOAAStore:
         return df
 
     def _timeseries_universe_get(self, element):
-
         qry = f"""
         SELECT data_daily.date, data_daily.id, data_daily.value
         FROM `bigquery-public-data.ghcn_d.ghcnd_*` AS data_daily
@@ -107,7 +103,6 @@ class NOAAStore:
         return df.set_index(["date", "id"])["value"]
 
     def timeseries_universe(self, element, overwrite=False):
-
         assert element in fields_daily.keys()
 
         key = element + "_US"
