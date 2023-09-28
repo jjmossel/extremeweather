@@ -6,6 +6,10 @@ We use a Maximum Likelihood Estimation (MLE) approach to model hourly rainfall i
 
 [Example notebook: Maximum Likelihood Estimation](/notebooks/GEV_demo_PRCP_US01.ipynb)
 
+## Example: Bayesian Approach for Extreme Rainfall Data
+In this notebook we use a Bayesian Approach (implemented in PyMC) to model extreme weather events. We start with a univariate study (which parallels the MLE approach) for a single weather station. Next we train a spatial model, by incorporating data from many (nearby) weather stations, using a Gaussian processes as prior distribution for the GEV model parameters.
+
+[Example notebook: Bayesian Approach with Gaussian Process](/notebooks/GEV_probabilistic_presentation.ipynb)
 
 
 ## References
