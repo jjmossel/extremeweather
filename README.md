@@ -11,6 +11,8 @@ In this notebook we use a Bayesian Approach (implemented in PyMC) to model extre
 
 [Example notebook: Bayesian Approach with Gaussian Process](/notebooks/GEV_probabilistic_presentation.ipynb)
 
+[PyData 2023 Talk](PyData2023_JornMossel_Modeling%20Extreme%20Events%20with%20PyMC.pdf)
+
 
 ## References
 * [An Introduction to Statistical Modeling of Extreme Values - Coles (2001)](https://link.springer.com/book/10.1007/978-1-4471-3675-0)
